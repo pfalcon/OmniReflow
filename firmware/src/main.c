@@ -117,6 +117,11 @@ TASK(USB_ProcessPacket)
                 switch (commandID) {
 
                     case USB_CMD_SET_PWM_VAL:
+                        {
+                            uint8_t pwm_val;
+                            USBOut_GetData(&pwm_val,sizeof(uint8_t));
+                            Set_PWM_Val(pwm_val);
+                        }
                         break;
 
                     case USB_CMD_GET_PWM_VAL:
@@ -276,12 +281,30 @@ static void IO_Init(void)
     ADCSRA |= (1 << ADPS1);
     ADCSRA |= (1 << ADPS1);
 
-    // Disable digital input
-    DIDR0 = 0x0;
+    // Set to input and Disable digital input
+    DDRF = 0x0; 
+    DIDR0 = 0xff;
 }
 
 static void IO_Disconnect(void)
 {
+}
+
+// Read thermocouple value
+// Note, may want to use the LUFA code for this ....
+static uint16_t Get_Therm_Val(void)
+{
+    uint16_t therm_val;
+    uint8_t val_H;
+    uint8_t val_L;
+
+    // Start conversion
+    ADCSRA |= (1<<ADSC);
+
+    // Wait for reading to complete
+
+
+    return therm_val;
 }
 
 // Set sys_state mode (PWM or CONSTANT)

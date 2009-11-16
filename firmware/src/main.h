@@ -117,5 +117,6 @@ static void Set_Mode(uint8_t mode);
 static void Set_PWM_Val(uint8_t val);
 static void Set_PWM_Period(float pwm_period);
 static float Get_PWM_Period(uint16_t top);
+static uint16_t Get_Therm_Val(void);
 
 #endif
