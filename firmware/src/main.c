@@ -32,12 +32,6 @@ int main(void)
     /* Disable clock division */
     clock_prescale_set(clock_div_1);
 
-    /* Hardware Initialization */
-    LEDs_Init();
-
-    /* Indicate USB not ready */
-    UpdateStatus(Status_USBNotReady);
-
     /* Initialize Scheduler so that it can be used */
     Scheduler_Init();
 
@@ -59,9 +53,6 @@ void EVENT_USB_Connect(void)
 {
     /* Start USB management task */
     Scheduler_SetTaskMode(USB_USBTask, TASK_RUN);
-
-    /* Indicate USB enumerating */
-    UpdateStatus(Status_USBEnumerating);
 }
 
 /** Event handler for the USB_Disconnect event. This indicates that the device is no longer connected to a host via
@@ -72,9 +63,6 @@ void EVENT_USB_Disconnect(void)
     /* Stop running HID reporting and USB management tasks */
     Scheduler_SetTaskMode(USB_ProcessPacket, TASK_STOP);
     Scheduler_SetTaskMode(USB_USBTask, TASK_STOP);
-
-    /* Indicate USB not ready */
-    UpdateStatus(Status_USBNotReady);
 }
 
 /** Event handler for the USB_ConfigurationChanged event. This is fired when the host sets the current configuration
@@ -91,40 +79,10 @@ void EVENT_USB_ConfigurationChanged(void)
             ENDPOINT_DIR_IN, IN_EPSIZE,
             ENDPOINT_BANK_SINGLE);
 
-    /* Indicate USB connected and ready */
-    UpdateStatus(Status_USBReady);
-
     /* Start ProcessPacket task */
     Scheduler_SetTaskMode(USB_ProcessPacket, TASK_RUN);
 }
 
-/** Function to manage status updates to the user. This is done via LEDs on the given board, if available, but may be changed to
- *  log to a serial port, or anything else that is suitable for status updates.
- */
-void UpdateStatus(uint8_t CurrentStatus)
-{
-    uint8_t LEDMask = LEDS_NO_LEDS;
-
-    /* Set the LED mask to the appropriate LED mask based on the given status code */
-    switch (CurrentStatus) {
-
-        case Status_USBNotReady:
-            LEDMask = (LEDS_LED1);
-            break;
-        case Status_USBEnumerating:
-            LEDMask = (LEDS_LED1 | LEDS_LED2);
-            break;
-        case Status_USBReady:
-            LEDMask = (LEDS_LED2 | LEDS_LED4);
-            break;
-        case Status_ProcessingPacket:
-            LEDMask = (LEDS_LED1 | LEDS_LED2);
-            break;
-    }
-
-    /* Set the board LEDs to the new LED mask */
-    LEDs_SetAllLEDs(LEDMask);
-}
 
 TASK(USB_ProcessPacket)
 {
@@ -142,9 +100,6 @@ TASK(USB_ProcessPacket)
             /* Check to see if a command from the host has been issued */
             if (Endpoint_IsReadWriteAllowed()) {
 
-                /* Indicate busy */
-                UpdateStatus(Status_ProcessingPacket);
-
                 /* Read USB packet from the host */
                 USBPacket_Read();
 
@@ -161,58 +116,42 @@ TASK(USB_ProcessPacket)
                 /* Process USB packet */
                 switch (commandID) {
 
-                    case USB_CMD_TEST8:
-                        count += 1;
-                        for (int j=0; j< 60; j++) {
-                            uint8_t val = (uint8_t)(count+j);
-                            USBIn_SetData(&val,sizeof(uint8_t));
+                    case USB_CMD_SET_PWM_VAL:
+                        break;
+
+                    case USB_CMD_GET_PWM_VAL:
+                        USBIn_SetData(&sys_state.pwm_val,sizeof(uint8_t));
+                        break;
+
+                    case USB_CMD_SET_RELAY_MODE:
+                        {
+                            uint8_t mode;
+                            USBOut_GetData(&mode,sizeof(uint8_t));
+                            Set_Mode(mode);
+                            USBIn_SetData(&sys_state.mode,sizeof(uint8_t));
                         }
                         break;
 
-                    case USB_CMD_TEST16:
-                        count += 1;
-                        for (int j=0; j< 30; j++) {
-                            uint16_t val = (uint16_t)(count+j);
-                            USBIn_SetData(&val,sizeof(uint16_t));
+                    case USB_CMD_GET_RELAY_MODE:
+                        USBIn_SetData(&sys_state.mode,sizeof(uint8_t));
+                        break;
+
+                    case USB_CMD_GET_THERM_VAL:
+                        break;
+
+                    case USB_CMD_SET_PWM_PERIOD:
+                        {
+                            float period;
+                            USBOut_GetData(&period,sizeof(float));
+                            Set_PWM_Period(period);
+                            USBIn_SetData(&sys_state.pwm_period,sizeof(float));
                         }
                         break;
 
-                    case USB_CMD_TEST32:
-                        count += 1;
-                        for (int j=0; j< 15; j++) {
-                            uint32_t val = (uint32_t)(count+j);
-                            USBIn_SetData(&val,sizeof(uint32_t));
-                        }
+                    case USB_CMD_GET_PWM_PERIOD:
+                        USBIn_SetData(&sys_state.pwm_period,sizeof(float));
                         break;
-
-                    case USB_CMD_TEST_SET:
-                        USBOut_GetData(&SysState.Val8,sizeof(uint8_t));
-                        USBOut_GetData(&SysState.Val16,sizeof(uint16_t));
-                        USBOut_GetData(&SysState.Val32,sizeof(uint32_t));
-                        break;
-
-                    case USB_CMD_TEST_GET:
-                        USBIn_SetData(&SysState.Val8,sizeof(uint8_t));
-                        USBIn_SetData(&SysState.Val16,sizeof(uint16_t));
-                        USBIn_SetData(&SysState.Val32,sizeof(uint32_t));
-                        break;
-
-                    case USB_CMD_STRUCT_SET:
-                        USBOut_GetData(&SysState, sizeof(SysState_t));
-                        break;
-
-                    case USB_CMD_STRUCT_GET:
-                        USBIn_SetData(&SysState, sizeof(SysState_t));
-                        break;
-
-                    case USB_CMD_FLOAT_SET:
-                        USBOut_GetData(&test_float, sizeof(float));
-                        break;
-
-                    case USB_CMD_FLOAT_GET:
-                        USBIn_SetData(&test_float, sizeof(float));
-                        break;
-                        
+                            
                     case USB_CMD_AVR_RESET:
                         USBPacket_Write();
                         AVR_RESET();
@@ -271,7 +210,6 @@ static uint8_t USBOut_GetData(void *data, size_t len)
     }
     return rval;
 }
-
 static void USBPacket_Read(void)
 {
     uint8_t* USBPacketOutPtr = (uint8_t*)&USBOut.Packet;
@@ -303,23 +241,132 @@ static void USBPacket_Write(void)
     Endpoint_ClearIN();
 }
 
+// Initialize IO 
 static void IO_Init(void)
 {
+    // Initial DIO PORT
+    DIO_DDR_PORT_E = 0xff;  // set all pins to output
+    DIO_PORT_E = 0x00;      // set all pins low
+
+    // Set indicator pin high
+    DIO_PORT_E |= (1 << dio_port_e_pins[0]);
+
+    // Set TOP high
+    Set_PWM_Period(DEFAULT_PWM_PERIOD); 
+
+    // Set timer control registers, set to fast PWM mode with double buffering of TOP
+    TIMER_TCCRA = 0x3; 
+    TIMER_TCCRB = 0x18; 
+
+    // Set Timer prescaler to 0
+    TIMER_TCCRB |= 0x1;
+    
+    // Enable Timer3 overflow interrupts
+    TIMER_TIMSK = 0x00; 
+    TIMER_TIMSK |= (1<<TIMER_TOIE); 
+    
+    // Set ADC channel and voltage reference
+    ADMUX = 0x0;
+    ADMUX |= (1 << REFS0); // voltage reference = AVcc
+    ADMUX |= (1 << MUX0);  // Channel 1
+
+    // Enable ADC, interupt enable, prescaler 128
+    ADCSRA |= (1 << ADEN);   // Enable
+    ADCSRA |= (1 << ADPS0);  // Prescaler
+    ADCSRA |= (1 << ADPS1);
+    ADCSRA |= (1 << ADPS1);
+
+    // Disable digital input
+    DIDR0 = 0x0;
 }
 
 static void IO_Disconnect(void)
 {
 }
 
-static void REG_16bit_Write(volatile uint16_t *reg, volatile uint16_t val)
+// Set sys_state mode (PWM or CONSTANT)
+static void Set_Mode(uint8_t mode)
 {
-    /* See "Accessing 16-bit Registers" of the AT90USB1287 datasheet */
-    uint8_t sreg;
-    /* Save global interrupt flag */
-    sreg = SREG;
-    /* Disable interrupts */
-    cli();
-    *reg = val;
-    /* Restore global interrupt flag */
-    SREG = sreg;
+    if ((mode == ON) || (mode == OFF) || (mode == PWM)) {
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+            sys_state.mode = mode;
+        }
+    }
+    return;
+}
+
+// Set sys_state.pwm_val 
+static void Set_PWM_Val(uint8_t val)
+{
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        sys_state.pwm_val = val;
+    }
+    return;
+}
+
+// Set sys_state.pwm_period
+static void Set_PWM_Period(float pwm_period)
+{ uint16_t top;
+    float period;
+    top = Set_TimerTop(pwm_period);
+    period = Get_PWM_Period(top);
+    sys_state.pwm_period = period;
+    return;
+}
+
+// Get the pwm period given the current top
+static float Get_PWM_Period(uint16_t top)
+{
+    float period;
+    period = 256.0*((float)top)/((float)F_CPU);
+    return period;
+}
+
+// Set timer top given desired pwm period
+static uint16_t Set_TimerTop(float pwm_period) 
+{ 
+    uint16_t top;
+    top = Get_TimerTop(pwm_period);
+    TIMER_TOP = top;
+    return top;
+}
+
+// Computes the timer top for a given pwm period
+static uint16_t Get_TimerTop(float pwm_period) 
+{
+    uint16_t top;
+    top = (uint16_t)((pwm_period*F_CPU)/(256.0));
+    top = top < TIMER_TOP_MAX ? top : TIMER_TOP_MAX; 
+    top = top > TIMER_TOP_MIN ? top : TIMER_TOP_MIN;
+    return top;
+}
+
+// Timer overflow interrupt  
+ISR(TIMER3_OVF_vect) {
+    switch(sys_state.mode) {
+
+        case ON:
+            DIO_PORT_E |= (1 << dio_port_e_pins[1]);
+            break;
+
+        case OFF:
+            DIO_PORT_E &= ~(1 << dio_port_e_pins[1]);
+            break;
+
+        case PWM:
+            sys_state.pwm_cnt += 1;
+            if (sys_state.pwm_cnt < sys_state.pwm_val) {
+                DIO_PORT_E |= (1 << dio_port_e_pins[1]);
+            }
+            else {
+                DIO_PORT_E &= ~(1 << dio_port_e_pins[1]);
+            }
+            break;
+
+        default:
+            break;
+    
+    } // switch(sys_state.mode)
+
+    return;
 }
