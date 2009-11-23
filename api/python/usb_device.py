@@ -1,6 +1,6 @@
 """
 -----------------------------------------------------------------------
-simple_step
+reflow
 Copyright (C) William Dickson, 2008.
   
 wbd@caltech.edu
@@ -8,14 +8,14 @@ www.willdickson.com
 
 Released under the LGPL Licence, Version 3
 
-This file is part of simple_step.
+This file is part of reflow.
 
-simple_step is free software: you can redistribute it and/or modify it
+reflow is free software: you can redistribute it and/or modify it
 under the terms of the GNU Lesser General Public License as published
 by the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
     
-simple_step is distributed in the hope that it will be useful, but
+reflow is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 Lesser General Public License for more details.
@@ -26,8 +26,7 @@ License along with simple_step.  If not, see
 
 ------------------------------------------------------------------------
 
-Purpose: Provides and API for the at90usb based stepper motor
-controller. 
+Purpose: . 
 
 Author: William Dickson 
 
@@ -40,30 +39,16 @@ import time
 import math
 import struct
 
-DEBUG = True 
+DEBUG = False 
 BYREF_EXISTS_VNUM = 2.6
 
 # USB parameters
-USB_VENDOR_ID = 0x0004 
-USB_PRODUCT_ID = 0x0001
-USB_BULKOUT_EP_ADDRESS = 0x01
-USB_BULKIN_EP_ADDRESS = 0x82
-USB_BUFFER_OUT_SIZE = 64 
-USB_BUFFER_IN_SIZE = 64
-
-# USB Command IDs
-USB_CMD_TEST8 = ctypes.c_uint8(0)
-USB_CMD_TEST16 = ctypes.c_uint8(1)
-USB_CMD_TEST32 = ctypes.c_uint8(2)
-USB_CMD_TEST_SET = ctypes.c_uint8(3)
-USB_CMD_TEST_GET = ctypes.c_uint8(4)
-USB_CMD_STRUCT_SET = ctypes.c_uint8(5)
-USB_CMD_STRUCT_GET = ctypes.c_uint8(6)
-USB_CMD_FLOAT_SET = ctypes.c_uint8(7)
-USB_CMD_FLOAT_GET = ctypes.c_uint8(8)
-USB_CMD_AVR_RESET = ctypes.c_uint8(200)
-USB_CMD_AVR_DFU_MODE = ctypes.c_uint8(201)
-
+DEFAULT_USB_VENDOR_ID = 0x0004 
+DEFAULT_USB_PRODUCT_ID = 0x0001
+DEFAULT_USB_BULKOUT_EP_ADDRESS = 0x01
+DEFAULT_USB_BULKIN_EP_ADDRESS = 0x82
+DEFAULT_USB_BUFFER_OUT_SIZE = 64 
+DEFAULT_USB_BUFFER_IN_SIZE = 64
 
 class USB_Device:
 
@@ -74,10 +59,12 @@ class USB_Device:
     def __init__(
             self,
             serial_number=None,
-            usb_product_id=USB_PRODUCT_ID,
-            usb_vendor_id=USB_VENDOR_ID,
-            usb_bulkout_ep_address=USB_BULKOUT_EP_ADDRESS,
-            usb_bulkin_sp_address=USB_BULKIN_EP_ADDRESS,
+            usb_product_id=DEFAULT_USB_PRODUCT_ID,
+            usb_vendor_id=DEFAULT_USB_VENDOR_ID,
+            usb_bulkout_ep_address=DEFAULT_USB_BULKOUT_EP_ADDRESS,
+            usb_bulkin_ep_address=DEFAULT_USB_BULKIN_EP_ADDRESS,
+            usb_buffer_out_size = DEFAULT_USB_BUFFER_OUT_SIZE,
+            usb_buffer_in_size = DEFAULT_USB_BUFFER_IN_SIZE,
             ):
         """
         Open and initialize usb device.
@@ -86,6 +73,13 @@ class USB_Device:
         
         Return: None.
         """
+        self.serial_number = serial_number
+        self.usb_product_id = usb_product_id
+        self.usb_vendor_id = usb_vendor_id
+        self.usb_bulkout_ep_address = usb_bulkout_ep_address
+        self.usb_bulkin_ep_address = usb_bulkin_ep_address
+        self.usb_buffer_out_size = usb_buffer_out_size
+        self.usb_buffer_in_size = usb_buffer_in_size
         usb.init()
         
         # Get usb busses
@@ -99,8 +93,8 @@ class USB_Device:
         dev_list = []
         for bus in busses:
             for dev in bus.devices:
-                if (dev.descriptor.idVendor == USB_VENDOR_ID and
-                    dev.descriptor.idProduct == USB_PRODUCT_ID):
+                if (dev.descriptor.idVendor == self.usb_vendor_id and
+                    dev.descriptor.idProduct == self.usb_product_id):
                     dev_list.append(dev)
                     found = True
         if not found:
@@ -140,16 +134,16 @@ class USB_Device:
         usb.set_configuration(self.libusb_handle, self.dev.config[0].bConfigurationValue)
         usb.claim_interface(self.libusb_handle, self.interface_nr)
 
-        self.output_buffer = ctypes.create_string_buffer(USB_BUFFER_OUT_SIZE)
-        self.input_buffer = ctypes.create_string_buffer(USB_BUFFER_IN_SIZE)
-        for i in range(USB_BUFFER_IN_SIZE):
+        self.output_buffer = ctypes.create_string_buffer(self.usb_buffer_out_size)
+        self.input_buffer = ctypes.create_string_buffer(self.usb_buffer_in_size)
+        for i in range(self.usb_buffer_in_size):
             self.input_buffer[i] = chr(0x00)
-        for i in range(USB_BUFFER_OUT_SIZE):
+        for i in range(self.usb_buffer_out_size):
             self.output_buffer[i] = chr(0x00)
 
         # Clear any possible halt on the endpoints
-        ret = usb.clear_halt(self.libusb_handle,USB_BULKOUT_EP_ADDRESS)
-        ret = usb.clear_halt(self.libusb_handle,USB_BULKIN_EP_ADDRESS)
+        ret = usb.clear_halt(self.libusb_handle,self.usb_bulkout_ep_address)
+        ret = usb.clear_halt(self.libusb_handle,self.usb_bulkin_ep_address)
 
         # Buffer position marker for reading from and writing to buffer
         self.output_buffer_pos = 0
@@ -192,7 +186,7 @@ class USB_Device:
         while not done:
             val = usb.bulk_write(
                     self.libusb_handle, 
-                    USB_BULKOUT_EP_ADDRESS, 
+                    self.usb_bulkout_ep_address, 
                     self.output_buffer, 
                     out_timeout
                     )
@@ -203,7 +197,7 @@ class USB_Device:
             try:
                 numbytes = usb.bulk_read(
                         self.libusb_handle, 
-                        USB_BULKIN_EP_ADDRESS, 
+                        self.usb_bulkin_ep_address, 
                         self.input_buffer, 
                         in_timeout
                         )
@@ -219,8 +213,8 @@ class USB_Device:
         buf_ptr = self.byref(self.output_buffer,self.output_buffer_pos)
         val_ptr = ctypes.pointer(val)
         sz = ctypes.sizeof(val)
-        if self.output_buffer_pos + sz >  USB_BUFFER_OUT_SIZE:
-            raise ValueError, 'output_buffer_pos + sz greater than USB_BUFFER_OUT_SIZE'
+        if self.output_buffer_pos + sz >  self.usb_buffer_out_size:
+            raise ValueError, 'output_buffer_pos + sz greater than self.usb_buffer_out_size'
         ctypes.memmove(buf_ptr,val_ptr,sz)
         self.output_buffer_pos += sz
         return 
@@ -229,8 +223,8 @@ class USB_Device:
         buf_ptr = self.byref(self.input_buffer,self.input_buffer_pos)
         val_ptr = ctypes.pointer(val)
         sz = ctypes.sizeof(val)
-        if self.input_buffer_pos + sz > USB_BUFFER_IN_SIZE:
-            raise ValueError, 'input_buffer_pos + sz greater than USB_BUFFER_IN_SIZE'
+        if self.input_buffer_pos + sz > self.usb_buffer_in_size:
+            raise ValueError, 'input_buffer_pos + sz greater than self.usb_buffer_in_size'
         ctypes.memmove(val_ptr,buf_ptr,sz)
         self.input_buffer_pos += sz
 
@@ -244,11 +238,11 @@ class USB_Device:
         for d in outdata:
             N += ctypes.sizeof(d)
 
-        if N > USB_BUFFER_OUT_SIZE:
+        if N > self.usb_buffer_out_size:
             raise ValueError, 'data array larger than max length'
 
         # Set output buffer data to all zeros 
-        for i in range(USB_BUFFER_OUT_SIZE):
+        for i in range(self.usb_buffer_out_size):
             self.output_buffer[i] = chr(0x00)
 
         self.output_buffer_pos = 0
@@ -408,7 +402,7 @@ def get_python_vnum():
 #-------------------------------------------------------------------------------------
 if __name__ == '__main__':
 
-    dev = USB_Device()
+    dev = Reflow()
     dev.print_values()
     print 
 
@@ -450,7 +444,7 @@ if __name__ == '__main__':
         print val_list
         print 
         
-    if 1:
+    if 0:
         class SysState_t(ctypes.LittleEndianStructure):
             _pack_=1
             _fields_ = [

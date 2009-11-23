@@ -1,3 +1,36 @@
+/*-----------------------------------------------------------------------
+reflow
+Copyright (C) William Dickson, 2008.
+  
+wbd@caltech.edu
+www.willdickson.com
+
+Released under the LGPL Licence, Version 3
+
+This file is part of reflow.
+
+reflow is free software: you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+    
+reflow is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with simple_step.  If not, see
+<http://www.gnu.org/licenses/>.
+
+------------------------------------------------------------------------
+
+Purpose: . 
+
+Author: William Dickson 
+
+-----------------------------------------------------------------------*/
+
 #ifndef _PWM_H_
 #define _PWM_H_
 
@@ -14,10 +47,11 @@
 #include <LUFA/Scheduler/Scheduler.h>        // Simple scheduler for task management
 #include <LUFA/Drivers/USB/USB.h>            // USB Functionality
 #include <LUFA/Drivers/Board/LEDs.h>         // LEDs driver
+#include <LUFA/Drivers/Peripheral/ADC.h>
 
 // USB Commands 
-#define USB_CMD_SET_RELAY_MODE  1
-#define USB_CMD_GET_RELAY_MODE  2
+#define USB_CMD_SET_MODE        1
+#define USB_CMD_GET_MODE        2
 #define USB_CMD_SET_PWM_VAL     3
 #define USB_CMD_GET_PWM_VAL     4
 #define USB_CMD_GET_THERM_VAL   5
@@ -59,7 +93,7 @@
 #define DIO_PORT_E PORTE
 #define DIO_PORT_E_PINS {PE0,PE1,PE2,PE3,PE4,PE5,PE6,PE7}
 
-enum { ON, OFF, PWM}; 
+enum {OFF, ON, PWM}; 
 
 typedef struct {
     char Buf[IN_EPSIZE];
@@ -81,7 +115,6 @@ typedef struct {
 
 // Sytem state structure
 typedef struct {
-    uint8_t relay_state;
     uint8_t mode;
     uint8_t pwm_val;
     uint8_t pwm_cnt;
@@ -92,7 +125,7 @@ typedef struct {
 const uint8_t dio_port_e_pins[] = DIO_PORT_E_PINS;
 USBIn_t USBIn;
 USBOut_t USBOut;
-Sys_State_t sys_state = {ON, PWM, 0, 0, DEFAULT_PWM_PERIOD};
+Sys_State_t sys_state = {OFF, 0, 0, DEFAULT_PWM_PERIOD};
 
 /* Task Definitions: */
 TASK(USB_ProcessPacket);

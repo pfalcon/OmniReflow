@@ -1,3 +1,35 @@
+/*-----------------------------------------------------------------------
+reflow
+Copyright (C) William Dickson, 2008.
+  
+wbd@caltech.edu
+www.willdickson.com
+
+Released under the LGPL Licence, Version 3
+
+This file is part of reflow.
+
+reflow is free software: you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+    
+reflow is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with simple_step.  If not, see
+<http://www.gnu.org/licenses/>.
+
+------------------------------------------------------------------------
+
+Purpose: . 
+
+Author: William Dickson 
+
+-----------------------------------------------------------------------*/
 #define INCLUDE_FROM_PWM_C
 #include "main.h"
 
@@ -46,34 +78,34 @@ int main(void)
 
 }
 
-/** Event handler for the USB_Connect event. This indicates that the device is enumerating via the status LEDs and
- *  starts the library USB task to begin the enumeration and USB management process.
+/* Event handler for the USB_Connect event. This indicates that the device is
+ * enumerating via the status LEDs and starts the library USB task to begin the
+ * enumeration and USB management process.
  */
+
 void EVENT_USB_Connect(void)
 {
     /* Start USB management task */
     Scheduler_SetTaskMode(USB_USBTask, TASK_RUN);
 }
 
-/** Event handler for the USB_Disconnect event. This indicates that the device is no longer connected to a host via
- *  the status LEDs and stops the USB management task.
+/* Event handler for the USB_Disconnect event. This indicates that the device
+ * is no longer connected to a host via the status LEDs and stops the USB
+ * management task.
  */
-void EVENT_USB_Disconnect(void)
-{
+void EVENT_USB_Disconnect(void) {
     /* Stop running HID reporting and USB management tasks */
     Scheduler_SetTaskMode(USB_ProcessPacket, TASK_STOP);
-    Scheduler_SetTaskMode(USB_USBTask, TASK_STOP);
-}
+    Scheduler_SetTaskMode(USB_USBTask, TASK_STOP); }
 
-/** Event handler for the USB_ConfigurationChanged event. This is fired when the host sets the current configuration
- *  of the USB device after enumeration, and configures the generic HID device endpoints.
+/* Event handler for the USB_ConfigurationChanged event. This is fired when the
+ * host sets the current configuration of the USB device after enumeration, and
+ * configures the generic HID device endpoints.
  */
-void EVENT_USB_ConfigurationChanged(void)
-{
+void EVENT_USB_ConfigurationChanged(void) {
     /* Setup USB In and Out Endpoints */
-    Endpoint_ConfigureEndpoint(OUT_EPNUM, EP_TYPE_BULK,
-            ENDPOINT_DIR_OUT, OUT_EPSIZE,
-            ENDPOINT_BANK_SINGLE); 
+    Endpoint_ConfigureEndpoint(OUT_EPNUM, EP_TYPE_BULK, ENDPOINT_DIR_OUT,
+            OUT_EPSIZE, ENDPOINT_BANK_SINGLE); 
 
     Endpoint_ConfigureEndpoint(IN_EPNUM, EP_TYPE_BULK,
             ENDPOINT_DIR_IN, IN_EPSIZE,
@@ -121,6 +153,7 @@ TASK(USB_ProcessPacket)
                             uint8_t pwm_val;
                             USBOut_GetData(&pwm_val,sizeof(uint8_t));
                             Set_PWM_Val(pwm_val);
+                            USBIn_SetData(&sys_state.pwm_val,sizeof(uint8_t));
                         }
                         break;
 
@@ -128,7 +161,7 @@ TASK(USB_ProcessPacket)
                         USBIn_SetData(&sys_state.pwm_val,sizeof(uint8_t));
                         break;
 
-                    case USB_CMD_SET_RELAY_MODE:
+                    case USB_CMD_SET_MODE:
                         {
                             uint8_t mode;
                             USBOut_GetData(&mode,sizeof(uint8_t));
@@ -137,11 +170,16 @@ TASK(USB_ProcessPacket)
                         }
                         break;
 
-                    case USB_CMD_GET_RELAY_MODE:
+                    case USB_CMD_GET_MODE:
                         USBIn_SetData(&sys_state.mode,sizeof(uint8_t));
                         break;
 
                     case USB_CMD_GET_THERM_VAL:
+                        {
+                            uint16_t therm_val;
+                            therm_val = Get_Therm_Val();
+                            USBIn_SetData(&therm_val,sizeof(uint16_t));
+                        }
                         break;
 
                     case USB_CMD_SET_PWM_PERIOD:
@@ -269,21 +307,15 @@ static void IO_Init(void)
     // Enable Timer3 overflow interrupts
     TIMER_TIMSK = 0x00; 
     TIMER_TIMSK |= (1<<TIMER_TOIE); 
-    
-    // Set ADC channel and voltage reference
-    ADMUX = 0x0;
-    ADMUX |= (1 << REFS0); // voltage reference = AVcc
-    ADMUX |= (1 << MUX0);  // Channel 1
 
     // Enable ADC, interupt enable, prescaler 128
-    ADCSRA |= (1 << ADEN);   // Enable
-    ADCSRA |= (1 << ADPS0);  // Prescaler
-    ADCSRA |= (1 << ADPS1);
-    ADCSRA |= (1 << ADPS1);
+    ADMUX = 0x0;
+    //ADMUX |= ADC_REFERENCE_AVCC;
+    ADMUX |=ADC_REFERENCE_INT2560MV; 
+    ADC_Init(ADC_PRESCALE_8 | ADC_SINGLE_CONVERSION);
 
-    // Set to input and Disable digital input
-    DDRF = 0x0; 
-    DIDR0 = 0xff;
+    // Setup ADC Channel
+    ADC_SetupChannel(1);
 }
 
 static void IO_Disconnect(void)
@@ -295,15 +327,8 @@ static void IO_Disconnect(void)
 static uint16_t Get_Therm_Val(void)
 {
     uint16_t therm_val;
-    uint8_t val_H;
-    uint8_t val_L;
-
-    // Start conversion
-    ADCSRA |= (1<<ADSC);
-
-    // Wait for reading to complete
-
-
+    //therm_val = ADC_GetChannelReading(ADC_REFERENCE_AVCC | (1 << MUX0));
+    therm_val = ADC_GetChannelReading(ADC_REFERENCE_INT2560MV | (1 << MUX0));
     return therm_val;
 }
 
