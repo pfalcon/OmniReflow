@@ -1,0 +1,22 @@
+reflow: reflow soldering controller  software and firmware
+
+1. firmware for the Atmel at90usb1287 microcontroller providing
+control of a hotplate or toaster oven for reflow soldering.
+
+2. a python api enabing communication with the at90usb1287
+microntroller via USB.
+
+3. a command line interface which enables control from the
+command line. 
+
+
+Installation instructions can be found in the INSTALL file.
+
+Author: William Dickson
+
+reflow may be freely distributed and modified in accordance with
+the GNU Lesser General Public License.
+
+
+
+
