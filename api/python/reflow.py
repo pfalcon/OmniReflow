@@ -32,8 +32,10 @@ Author: William Dickson
 
 ------------------------------------------------------------------------
 """
+import sys
 import usb_device
 import ctypes
+import time
 
 def swap_dict(in_dict):
     """
@@ -127,6 +129,7 @@ class Reflow(usb_device.USB_Device):
             raise IOError, 'mode int value sent (%d) not equal to mode int received (%d)'%(mode_int, mode_int_recv)
 
     def set_pwm_value(self, value):
+        value = int(value)
         value_ctypes = ctypes.c_uint8(value)
         cmd_id_sent =   USB_CMD_SET_PWM_VAL
         outdata = [cmd_id_sent, value_ctypes]
@@ -155,6 +158,67 @@ class Reflow(usb_device.USB_Device):
         check_cmd_id(cmd_id_sent, cmd_id_recv)
         return period_recv
 
+    def step_test(self, ctl_val=0.75*255, t_on=100.0, t_off=1100.0, t_stop = 2100.0, dt=1.0, pwm_period=0.5):
+        """
+        Step response test. 
+        """
+
+        mode = 'off'
+        self.set_mode('off')
+        self.set_pwm_period(pwm_period)
+        temp_list = []
+        time_list = []
+        ctl_list = []
+        t0 = time.time()
+        t = 0.0 
+
+        while 1:
+
+            # Record time and temperature.
+            time_list.append(t)
+            temp = self.get_therm_value()
+            temp_list.append(temp)
+            if mode == 'pwm':
+                ctl_list.append(ctl_val)
+            else:
+                ctl_list.append(0.0)
+
+            # Display time, temperature and mode
+            print 't = %1.2f, T = %1.2f, mode = %s'%(t,temp,mode)
+            sys.stdout.flush()
+
+            # Set mode based on current time.
+            if t >= t_stop:
+                self.set_mode('off')
+                break
+            elif (mode=='off') and (t >= t_on) and (t < t_off):
+                self.set_pwm_value(ctl_val)
+                self.set_mode('pwm')
+                mode = 'pwm'
+            elif (mode=='pwm') and (t>=t_off):
+                self.set_mode('off')
+                mode = 'off'
+
+            # Sleep for dt seconds and then get new current time.
+            time.sleep(dt)
+            t = time.time() - t0
+
+        # Pack step response data into dictionary
+        data = {
+            'ctl_val'    : ctl_val,
+            't_on'       : t_on,
+            't_off'      : t_off, 
+            't_stop'     : t_stop,
+            'dt'         : dt,
+            'time_list'  : time_list,
+            'temp_list'  : temp_list,
+            'ctl_list'   : ctl_list,
+            'pwm_period' : pwm_period,
+        }
+
+        return data
+
+
 def timertop_2_period(timertop):
     freq = 256.0*timertop/F_CPU
     return freq
@@ -169,13 +233,32 @@ def check_cmd_id(idout, idin):
 
 #-------------------------------------------------------------------------------------
 if __name__ == '__main__':
-    import time
+
+    import cPickle as pickle
+    import pylab
 
     dev = Reflow()
     dev.print_values()
     print
 
+    if 0:
+        data = dev.step_test(ctl_val=1.00*255, t_on=100.0, t_off=300.0, t_stop = 600.0, dt=1.0, pwm_period=1.0)
+        fid = open('temp_data_u100_period_1p0.pkl','w')
+        pickle.dump(data,fid)
+        fid.close()
+
     if 1:
+
+        fid = open('temp_data_u100_period_1p0.pkl','r')
+        data = pickle.load(fid)
+        fid.close()
+        pylab.subplot(211)
+        pylab.plot(data['time_list'], data['temp_list'],'.')
+        pylab.subplot(212)
+        pylab.plot(data['time_list'], data['ctl_list'],'r')
+        pylab.show()
+
+    if 0:
         t_on = 600.0
         t_cool = 600.0
         dev.set_mode('off')
