@@ -347,7 +347,7 @@ def estimate_model_param(dataset):
     t_delay = param_sol[3]
     T_a = param_sol[4]
     
-    if 0:
+    if 1:
         print 'ctl_coef:', ctl_coef
         print 'temp_coef:', temp_coef 
         print 't_delay:', t_delay
@@ -430,11 +430,11 @@ def estimate_rate_func(t, T, N, plot_flag=False, method='central diff'):
 if __name__ == '__main__':
 
     if 0:
-        dataset = load_pulse_dataset('temp_data_u100_period_1p0.pkl')
+        dataset = load_pulse_dataset('temp_data_u75_period_1p0.pkl')
         model_param = estimate_model_param(dataset)
-        fid = open('model_param.pkl','w')
-        pickle.dump(model_param,fid)
-        fid.close()
+        #fid = open('model_param.pkl','w')
+        #pickle.dump(model_param,fid)
+        #fid.close()
 
     if 0:
         model = Therm_Delay_Model()
@@ -459,7 +459,7 @@ if __name__ == '__main__':
         pylab.show()
 
 
-    if 1:
+    if 0:
         model = Therm_Delay_Model()
         model.load_param('model_param.pkl')
         
@@ -467,7 +467,7 @@ if __name__ == '__main__':
         pulse_lo = 0.0 
         pulse_hi = 200.0 
         pulse_t0 = 100.0
-        pulse_t1 = 1000.0
+        pulse_t1 = 1500.0
         pulse = Pulse(pulse_lo, pulse_hi, pulse_t0, pulse_t1)
 
         def test_func(t):
@@ -498,14 +498,35 @@ if __name__ == '__main__':
             else:
                 return 150
 
-        #control = PI_Controller(pulse.func, 2.0, 0.015)
-        control = PI_Controller(pulse.func, 2.0, 0.0, ff_func = model.ctl_for_steady_state)
+        #control = PI_Controller(pulse.func, 3.8, 0.015)
+        control = PI_Controller(pulse.func, 3.8, 0.005,ff_func = model.ctl_for_steady_state)
+        #control = PI_Controller(pulse.func, 4.0, 0.001, ff_func = model.ctl_for_steady_state)
         #control = PI_Controller(steps, 3.0, 0.0, ff_func = model.ctl_for_steady_state)
         model.ctl_func = control.func 
 
-        t = scipy.linspace(0.0, 1000.0, 1000.0)
+        t = scipy.linspace(0.0, 1500.0, 1000.0)
         T_sol = model.solve_fixed_step(model.T_amb, t)
         pylab.plot(t,T_sol)
         pylab.show()
 
+    if 1:
+        import reflow_profile
+
+        model = Therm_Delay_Model()
+        model.load_param('model_param.pkl')
+        profile = reflow_profile.Reflow_Profile(model.T_amb)
+        stop_t = profile.stop_time()
+        
+
+        #control = PI_Controller(profile.func, 3.8, 0.015)
+        control = PI_Controller(profile.func, 3.8, 0.005,ff_func = model.ctl_for_steady_state)
+        #control = PI_Controller(profile.func, 4.0, 0.001, ff_func = model.ctl_for_steady_state)
+        model.ctl_func = control.func 
+
+        t = scipy.linspace(0.0, stop_t, 1000.0)
+        T_profile = [profile.func(tt-model.t_delay) for tt in t]
+        T_sol = model.solve_fixed_step(model.T_amb, t)
+        pylab.plot(t,T_profile,'r')
+        pylab.plot(t,T_sol,'b')
+        pylab.show()
 
