@@ -499,9 +499,9 @@ if __name__ == '__main__':
                 return 150
 
         #control = PI_Controller(pulse.func, 3.8, 0.015)
-        control = PI_Controller(pulse.func, 3.8, 0.005,ff_func = model.ctl_for_steady_state)
+        #control = PI_Controller(pulse.func, 3.8, 0.005,ff_func = model.ctl_for_steady_state)
         #control = PI_Controller(pulse.func, 4.0, 0.001, ff_func = model.ctl_for_steady_state)
-        #control = PI_Controller(steps, 3.0, 0.0, ff_func = model.ctl_for_steady_state)
+        control = PI_Controller(pulse.func, 3.0, 0.0, ff_func = model.ctl_for_steady_state)
         model.ctl_func = control.func 
 
         t = scipy.linspace(0.0, 1500.0, 1000.0)
@@ -519,8 +519,8 @@ if __name__ == '__main__':
         
 
         #control = PI_Controller(profile.func, 3.8, 0.015)
-        control = PI_Controller(profile.func, 3.8, 0.005,ff_func = model.ctl_for_steady_state)
-        #control = PI_Controller(profile.func, 4.0, 0.001, ff_func = model.ctl_for_steady_state)
+        #control = PI_Controller(profile.func, 3.8, 0.005,ff_func = model.ctl_for_steady_state)
+        control = PI_Controller(profile.func, 4.0, 0.0, ff_func = model.ctl_for_steady_state)
         model.ctl_func = control.func 
 
         t = scipy.linspace(0.0, stop_t, 1000.0)

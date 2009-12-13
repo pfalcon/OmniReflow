@@ -1,4 +1,4 @@
-DEFAULT_PARAM = {
+DEFAULT_PARAM_1 = {
         'preheat_T_end'         : 170.0,
         'preheat_C_per_sec'     : 1.5, 
         'soak_delta_t'          : 80.0,
@@ -9,10 +9,32 @@ DEFAULT_PARAM = {
         'cool_T_end'            : 50.0
         }
 
+DEFAULT_PARAM = {
+        'preheat_T'      : 150, 
+        'preheat_rate'   : 1.5, 
+        'soak_T'         : 180,
+        'soak_dt'        : 80.0,
+        'reflow_T'       : 220.0,
+        'reflow_dt'      : 75.0,
+        }
+
+class Reflow_Profile_new:
+
+    def __init__(self, start_T, param=DEFAULT_PARAM):
+        self.preheat_T = param['preheat_T']
+        self.preheat_rate = param['preheat_rate']
+        self.soak_T = param['soak_T']
+        self.soak_dt = param['soak_dt']
+        self.reflow_T = param['reflow_T']
+        self.reflow_dt = param['reflow_dt']
+
+    def get_times(self):
+        pass
+
 
 class Reflow_Profile:
 
-    def __init__(self,start_T,param=DEFAULT_PARAM):
+    def __init__(self,start_T,param=DEFAULT_PARAM_1):
         self.start_T =  start_T
         self.preheat_T_end = param['preheat_T_end']
         self.preheat_C_per_sec = param['preheat_C_per_sec']
