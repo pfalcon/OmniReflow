@@ -241,13 +241,13 @@ if __name__ == '__main__':
     dev.print_values()
     print
 
-    if 0:
-        data = dev.step_test(ctl_val=1.00*255, t_on=100.0, t_off=300.0, t_stop = 600.0, dt=1.0, pwm_period=1.0)
-        fid = open('temp_data_u100_period_1p0.pkl','w')
-        pickle.dump(data,fid)
-        fid.close()
-
     if 1:
+        data = dev.step_test(ctl_val=1.00*255, t_on=100.0, t_off=300.0, t_stop = 600.0, dt=1.0, pwm_period=1.0)
+        #fid = open('temp_data_u100_period_1p0.pkl','w')
+        #pickle.dump(data,fid)
+        #fid.close()
+
+    if 0:
 
         fid = open('temp_data_u100_period_1p0.pkl','r')
         data = pickle.load(fid)

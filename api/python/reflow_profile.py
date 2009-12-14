@@ -5,7 +5,7 @@ DEFAULT_PARAM = {
         'soak_dt'        : 90.0,
         'reflow_T'       : 220.0,
         'reflow_dt'      : 90.0,
-        'cool_dt'        : 300.0
+        'cool_dt'        : 200.0,
         }
 
 class Reflow_Profile:
