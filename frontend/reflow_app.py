@@ -188,7 +188,7 @@ def num2tempstr(val):
 if __name__ == "__main__":
 
     app = QtGui.QApplication(sys.argv)
-    dev_plugin = "reflow_device"
+    dev_plugin = "reflow_device_model"
     if len(sys.argv) > 1:
         dev_plugin = sys.argv[1]
     reflow = __import__(dev_plugin)
