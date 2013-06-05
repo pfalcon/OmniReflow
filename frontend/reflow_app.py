@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf8
 import sys
 import reflow_profile
 import controller
@@ -67,8 +68,8 @@ class MyApp(QtGui.QMainWindow):
         # Set up plot - may want to autoset x axis scale
         print stop_t
         self.ui.tempPlot.setCanvasBackground(QtCore.Qt.black)
-        self.ui.tempPlot.setAxisTitle(Qwt.QwtPlot.xBottom, '(sec)')
-        self.ui.tempPlot.setAxisTitle(Qwt.QwtPlot.yLeft, '(C)')
+        self.ui.tempPlot.setAxisTitle(Qwt.QwtPlot.xBottom, 'time, s')
+        self.ui.tempPlot.setAxisTitle(Qwt.QwtPlot.yLeft, u'temp, °C')
         self.ui.tempPlot.setAxisScale(Qwt.QwtPlot.xBottom, 0, 500, 100)
         self.ui.tempPlot.setAxisScale(Qwt.QwtPlot.yLeft, 0, 300, 100)
 
