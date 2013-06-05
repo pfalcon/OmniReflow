@@ -15,9 +15,9 @@ IGAIN = 0.0
 
 class MyApp(QtGui.QMainWindow):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, device=None):
         # Set up device
-        self.dev = reflow.ReflowDevice()
+        self.dev = device
         self.dev.set_power(0)
         temp = self.dev.get_therm_value()
 
@@ -183,6 +183,7 @@ def num2tempstr(val):
 if __name__ == "__main__":
 
     app = QtGui.QApplication(sys.argv)
-    myapp = MyApp()
+    dev = reflow.ReflowDevice()
+    myapp = MyApp(device=dev)
     myapp.show()
     sys.exit(app.exec_())
