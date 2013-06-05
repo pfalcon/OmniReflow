@@ -1,5 +1,4 @@
 import sys
-import reflow_device as reflow
 import reflow_profile
 import controller
 import delay_model
@@ -183,6 +182,10 @@ def num2tempstr(val):
 if __name__ == "__main__":
 
     app = QtGui.QApplication(sys.argv)
+    dev_plugin = "reflow_device"
+    if len(sys.argv) > 1:
+        dev_plugin = sys.argv[1]
+    reflow = __import__(dev_plugin)
     dev = reflow.ReflowDevice()
     myapp = MyApp(device=dev)
     myapp.show()
