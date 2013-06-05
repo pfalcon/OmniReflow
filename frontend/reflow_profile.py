@@ -6,6 +6,8 @@ DEFAULT_PARAM = {
         'reflow_T'       : 220.0,
         'reflow_dt'      : 90.0,
         'cool_dt'        : 200.0,
+        # Solder paste melting point
+        'melt_T'         : 185.0,
         }
 
 class Reflow_Profile:
@@ -19,6 +21,7 @@ class Reflow_Profile:
         self.reflow_T = param['reflow_T']
         self.reflow_dt = param['reflow_dt']
         self.cool_dt = param['cool_dt']
+        self.melt_T = param['melt_T']
 
         # compute times
         self.preheat_t = (self.preheat_T - self.start_T)/self.preheat_rate

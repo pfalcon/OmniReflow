@@ -85,6 +85,17 @@ class MyApp(QtGui.QMainWindow):
         self.setp_curve.setData(t, T)
         self.ui.tempPlot.replot()
 
+        # Setup solder paste melt point ruler
+        self.melt_ruler = Qwt.QwtPlotCurve('')
+        self.pen = QtGui.QPen(QtGui.QColor('gray'))
+        self.pen.setStyle(QtCore.Qt.DashLine)
+        self.melt_ruler.setPen(self.pen)
+        self.melt_ruler.attach(self.ui.tempPlot)
+        t = scipy.linspace(0.0, stop_t, 2)
+        T = scipy.array([self.reflow_profile.melt_T] * 2)
+        self.melt_ruler.setData(t, T)
+        self.ui.tempPlot.replot()
+
         # Set data curve 
         self.data_curve = Qwt.QwtPlotCurve('')
         self.data_curve.setRenderHint(Qwt.QwtPlotItem.RenderAntialiased)
