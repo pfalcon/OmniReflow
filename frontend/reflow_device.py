@@ -36,6 +36,12 @@ class ReflowDevice(object):
     def __init__(self):
         pass
 
+    def set_clock(self, clock):
+        """Set object which ReflowDevice can use as a global time reference.
+        This is needed only for simulator devices.
+        """
+        pass
+
     def get_therm_value(self):
         "Return current temperature of heated element in degrees Celsium."
         return 0

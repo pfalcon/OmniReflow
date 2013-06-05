@@ -16,9 +16,15 @@ IGAIN = 0.0
 class MyApp(QtGui.QMainWindow):
 
     def __init__(self, parent=None, device=None):
+        self.state = 'stopped'
+        self.t0 = None
+        self.t_stop = None
+        self.t_offset = 0.0
+
         # Set up device
         self.dev = device
         self.dev.set_power(0)
+        self.dev.set_clock(self)
         temp = self.dev.get_therm_value()
 
         # Create set point function
@@ -85,10 +91,6 @@ class MyApp(QtGui.QMainWindow):
         self.data_curve.setPen(self.pen)
         self.data_curve.attach(self.ui.tempPlot)
 
-        self.state = 'stopped'
-        self.t0 = None
-        self.t_stop = None  
-        self.t_offset = 0.0
         self.update_status()
 
         # Lists for time and temp samples
@@ -173,6 +175,8 @@ class MyApp(QtGui.QMainWindow):
         return self.ui.controlCheckbox.isChecked()
 
     def get_time(self):
+        if self.t0 is None:
+            return 0
         return (time.time() - self.t0 - self.t_offset) * SIMULATION_SPEEDUP
 
 
