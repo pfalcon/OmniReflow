@@ -9,6 +9,7 @@ import PyQt4.Qwt5 as Qwt
 from reflow_gui import Ui_MainWindow 
 
 TIMER_INTERVAL = 1000
+SIMULATION_SPEEDUP = 1.0
 PGAIN = 4.0
 IGAIN = 0.0
 
@@ -50,7 +51,7 @@ class MyApp(QtGui.QMainWindow):
         # Set up event timer
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.on_timer_update)
-        self.timer.setInterval(TIMER_INTERVAL)
+        self.timer.setInterval(TIMER_INTERVAL / SIMULATION_SPEEDUP)
         self.timer.start()
 
         # Set lcd display
@@ -172,7 +173,7 @@ class MyApp(QtGui.QMainWindow):
         return self.ui.controlCheckbox.isChecked()
 
     def get_time(self):
-        return time.time() - self.t0 - self.t_offset
+        return (time.time() - self.t0 - self.t_offset) * SIMULATION_SPEEDUP
 
 
 def num2tempstr(val):
