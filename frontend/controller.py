@@ -32,7 +32,7 @@ class PI_Controller:
 
 class Integrator:
 
-    def __init__(self,clamp=1000000.0):
+    def __init__(self, clamp=200.0):
         self.value = 0.0
         self.last_t = 0.0 
         self.clamp = clamp
