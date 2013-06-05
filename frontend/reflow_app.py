@@ -10,7 +10,6 @@ import PyQt4.Qwt5 as Qwt
 from reflow_gui import Ui_MainWindow 
 
 TIMER_INTERVAL = 1000
-PWM_PERIOD = 0.5 
 PGAIN = 4.0
 IGAIN = 0.0
 
@@ -19,7 +18,6 @@ class MyApp(QtGui.QMainWindow):
     def __init__(self, parent=None):
         # Set up device
         self.dev = reflow.Reflow()
-        self.dev.set_pwm_period(PWM_PERIOD) 
         self.dev.set_mode('off')
         temp = self.dev.get_therm_value()
 

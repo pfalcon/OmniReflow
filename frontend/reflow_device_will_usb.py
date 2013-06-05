@@ -62,6 +62,7 @@ USB_CMD_AVR_DFU_MODE = ctypes.c_uint8(201)
 MODE2STR_DICT = {0:'off', 1:'on', 2:'pwm'}
 STR2MODE_DICT = swap_dict(MODE2STR_DICT) 
 
+PWM_PERIOD = 0.5
 TIMER_TOP_MIN = 625      
 TIMER_TOP_MAX = 65535   
 F_CPU = 16.0e6
@@ -71,6 +72,7 @@ class Reflow(usb_device.USB_Device):
 
     def __init__(self):
         usb_device.USB_Device.__init__(self)
+        self.set_pwm_period(PWM_PERIOD)
 
     def get_mode(self):
         cmd_id_sent = USB_CMD_GET_MODE
