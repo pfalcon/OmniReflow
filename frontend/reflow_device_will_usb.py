@@ -130,6 +130,12 @@ class Reflow(usb_device.USB_Device):
         if mode_int_recv != mode_int:
             raise IOError, 'mode int value sent (%d) not equal to mode int received (%d)'%(mode_int, mode_int_recv)
 
+    def set_power(self, value):
+        if value == 0:
+            set_mode('off')
+        else:
+            self.set_pwm_value(value)
+
     def set_pwm_value(self, value):
         value = int(value)
         value_ctypes = ctypes.c_uint8(value)

@@ -37,7 +37,13 @@ class ReflowDevice(object):
         pass
 
     def get_therm_value(self):
+        "Return current temperature of heated element in degrees Celsium."
         return 0
 
     def set_power(self, value):
+        """Set relative power of heater, in the range 0.0-255.0
+        (note - floating point)"""
+        pass
+
+    def close(self):
         pass

@@ -1,5 +1,5 @@
 import sys
-import reflow
+import reflow_device as reflow
 import reflow_profile
 import controller
 import delay_model
@@ -17,8 +17,8 @@ class MyApp(QtGui.QMainWindow):
 
     def __init__(self, parent=None):
         # Set up device
-        self.dev = reflow.Reflow()
-        self.dev.set_mode('off')
+        self.dev = reflow.ReflowDevice()
+        self.dev.set_power(0)
         temp = self.dev.get_therm_value()
 
         # Create set point function
@@ -101,9 +101,9 @@ class MyApp(QtGui.QMainWindow):
 
     def update_mode(self):
         if self.control_is_on()==True and self.state=='running':
-            self.dev.set_mode('pwm')
+            pass
         else:
-            self.dev.set_mode('off')
+            self.dev.set_power(0)
 
     def on_start_clicked(self):
         print 'start'
@@ -147,7 +147,7 @@ class MyApp(QtGui.QMainWindow):
             self.update_plot()
             if self.control_is_on():
                 pwm_value = self.controller.func(t,temp)
-                self.dev.set_pwm_value(pwm_value)
+                self.dev.set_power(pwm_value)
                 print 'pwm_value:', pwm_value
             if t > self.reflow_profile.stop_time():
                 self.state = 'stopped'
@@ -166,8 +166,7 @@ class MyApp(QtGui.QMainWindow):
 
     def closeEvent(self,event):
         print 'closing device'
-        self.dev.set_mode('off')
-        self.dev.set_pwm_value(0)
+        self.dev.set_power(0)
         self.dev.close()
 
     def control_is_on(self):
