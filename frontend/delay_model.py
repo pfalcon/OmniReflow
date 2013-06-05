@@ -29,16 +29,20 @@ class Therm_Delay_Model:
         self.t_delay = t_delay
         self.T_amb = T_amb
 
-    def diff_eq(self,T,t):
-        val = (self.ctl_coef[1] + self.ctl_coef[0]*T)*self.ctl_func(t-self.t_delay,T)
-        val -= self.temp_coef*(T - self.T_amb) 
+    def diff(self, T, t, ctl):
+        """Return temperature differential at time t based on previous
+        temperature T and control influence ctl.
+        """
+        val = (self.ctl_coef[1] + self.ctl_coef[0] * T) * ctl
+        val -= self.temp_coef * (T - self.T_amb)
         return val
+
+    def diff_eq(self, T, t):
+        return self.diff(T, t, self.ctl_func(t - self.t_delay, T))
 
     def diff_eq_fixed_step(self,T,t):
         t_w_delay, T_w_delay = self.delay.get_values()
-        val = (self.ctl_coef[1] + self.ctl_coef[0]*T)*self.ctl_func(t_w_delay,T_w_delay)
-        val -= self.temp_coef*(T - self.T_amb) 
-        return val
+        return self.diff(T, t, self.ctl_func(t_w_delay, T_w_delay))
 
     def solve(self, T0, t):
         T_sol = scipy.integrate.odeint(self.diff_eq, T0, t)
